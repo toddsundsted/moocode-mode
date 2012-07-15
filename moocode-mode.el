@@ -44,7 +44,12 @@
 (defcustom moocode-tab-indent t
   "*Non-nil means TAB in MOO code major mode calls `moocode-indent-line'."
   :type 'boolean
-  :group 'python-mode)
+  :group 'moocode-mode)
+
+(defcustom moocode-electric-mode t
+  "*Non-nil means ; in MOO code major mode calls `moocode-electric-semicolon'."
+  :type 'boolean
+  :group 'moocode-mode)
 
 (defcustom moocode-mode-hook nil
   "Hook run when entering MOO code major mode."
@@ -96,7 +101,7 @@
     ("^\\s-*\\(\\w+\\)\\s-*=[^=]"
      (1 font-lock-variable-name-face))
     ;; Multiple local variable declarations
-    ;; Note \\(\\) to ensure there's always a 2, even if empty
+    ;; Note the empty \\(\\) to ensure there's always a 2, even if empty
     ("^\\s-*{" "\\(\\(\\<\\w+\\>\\)[^,]*\\|\\(\\)\\s-*}\\)" nil nil
      (2 font-lock-variable-name-face))
     ;; Verb declarations
@@ -111,10 +116,8 @@
      (2 font-lock-variable-name-face)
      ;; The property permission flags
      (4 font-lock-constant-face))
-    ;; Automatically provided variables
-    ;; .? to correctly handle this.(verb)
-    ;; Only that doesn't work :-/
-    ("\\<\\(args\\|argstr\\|caller\.?\\|dobj\.?\\|dobjstr\\|iobj\.?\\|iobjstr\\|player\.?\\|prepstr\\|this\\.?\\|verb\\)\\>"
+    ;; Automatically provided variables in verbs
+    ("\\<\\(args\\|argstr\\|caller\\|dobj\\|dobjstr\\|iobj\\|iobjstr\\|player\\|prepstr\\|this\\|verb\\)\\>"
      . font-lock-variable-name-face)
     ;; Built-in functions
     ("\\<\\(\\(?:a\\(?:bs\\|cos\\|dd_\\(?:property\\|verb\\)\\|\\(?:si\\|ta\\)n\\)\\|b\\(?:inary_hash\\|oot_player\\|uffered_output_length\\)\\|c\\(?:all\\(?:_function\\|er\\(?:\\(?:_perm\\)?s\\)\\)\\|eil\\|h\\(?:ildren\\|parent\\)\\|lear_property\\|o\\(?:nnect\\(?:ed_\\(?:\\(?:player\\|second\\)s\\)\\|ion_\\(?:name\\|options?\\)\\)\\|sh?\\)\\|r\\(?:eate\\|ypt\\)\\|time\\)\\|d\\(?:b_disk_size\\|e\\(?:code_binary\\|lete_\\(?:property\\|verb\\)\\)\\|\\(?:isassembl\\|ump_databas\\)e\\)\\|e\\(?:ncode_binary\\|qual\\|val\\|xp\\)\\|f\\(?:l\\(?:o\\(?:\\(?:atst\\|o\\)r\\)\\|ush_input\\)\\|orce_input\\|unction_info\\)\\|i\\(?:dle_seconds\\|ndex\\|s_\\(?:clear_property\\|\\(?:memb\\|play\\)er\\)\\)\\|kill_task\\|l\\(?:ength\\|ist\\(?:append\\|delete\\|en\\(?:ers\\)?\\|\\(?:inser\\|se\\)t\\)\\|og\\(?:10\\)?\\)\\|m\\(?:a\\(?:tch\\|x\\(?:_object\\)?\\)\\|emory_usage\\|in\\|ove\\)\\|notify\\|o\\(?:bject_bytes\\|pen_network_connection\\|utput_delimiters\\)\\|p\\(?:a\\(?:rent\\|ss\\)\\|layers\\|ropert\\(?:ies\\|y_info\\)\\)\\|queue\\(?:_info\\|d_tasks\\)\\|r\\(?:a\\(?:ise\\|ndom\\)\\|e\\(?:ad\\|cycle\\|number\\|s\\(?:et_max_object\\|ume\\)\\)\\|index\\|match\\)\\|s\\(?:e\\(?:conds_left\\|rver_\\(?:log\\|version\\)\\|t\\(?:_\\(?:connection_option\\|p\\(?:layer_flag\\|roperty_info\\)\\|task_perms\\|verb_\\(?:args\\|code\\|info\\)\\)\\|add\\|remove\\)\\)\\|hutdown\\|inh?\\|qrt\\|tr\\(?:cmp\\|ing_hash\\|sub\\)\\|u\\(?:bstitute\\|spend\\)\\)\\|t\\(?:a\\(?:nh?\\|sk_\\(?:id\\|stack\\)\\)\\|i\\(?:cks_left\\|me\\)\\|o\\(?:float\\|int\\|literal\\|num\\|obj\\|str\\)\\|runc\\|ypeof\\)\\|unlisten\\|v\\(?:al\\(?:id\\|ue_\\(?:bytes\\|hash\\)\\)\\|erb\\(?:_\\(?:args\\|code\\|info\\)\\|s\\)\\)\\)\\)\\s-*("
@@ -128,6 +131,8 @@
      0 'default t)
     (moocode-font-lock-maybe-notedit
      0 'default t)
+    ;; Warn of bare object number references
+    ("#[0-9]+" . font-lock-warning-face)
   )
   "Highlighting for MOO code major mode.")
 
@@ -148,7 +153,7 @@
   (looking-at "^\\s-*$"))
 
 (defun moocode-property-edit-linep ()
-  "Check whether the current line is the start of @edit-ing a property."
+  "Check whether the current line is the start of a propedit block."
     (looking-at "^\\s-*\\(\\(?:@\\(?:answer\\|notedit\\|send\\)\\)\\|@edit\\s-+\\w+\\.\\w+\\)"))
 
 (defun moocode-point-in-property-editp (rlimit)
@@ -245,16 +250,35 @@
   (message nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Electricity
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun moocode-electric-semicolon ()
+  "Insert a semicolon and indent the line."
+  (interactive)
+  (insert ";")
+  (when moocode-electric-mode
+    (moocode-indent-line)
+    (end-of-line)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Syntax table
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar moocode-mode-syntax-table
   (let ((st (make-syntax-table)))
+    ;; Allow some extra characters in words
     (modify-syntax-entry ?_ "w" st)
     (modify-syntax-entry ?@ "w" st)
     (modify-syntax-entry ?$ "w" st)
-    (modify-syntax-entry ?\[ "(]")
-    (modify-syntax-entry ?\] ")[")
+    ;; Brackets
+    (modify-syntax-entry ?\[ "(]" st)
+    (modify-syntax-entry ?\] ")[" st)
+    (modify-syntax-entry ?\( "()" st)
+    (modify-syntax-entry ?\) ")(" st)
+    ;; MOO uses c-style comments /* ... */
+    (modify-syntax-entry ?/ ". 14" st)
+    (modify-syntax-entry ?* ". 23" st)
     st)
   "Syntax table for MOO code major mode.")
 
@@ -266,6 +290,7 @@
   (let ((map (make-sparse-keymap)))
     (define-key map "\C-j" 'newline-and-indent)
     (define-key map (kbd "TAB") 'moocode-tab)
+    (define-key map ";" 'moocode-electric-semicolon)
     (define-key map "\C-c;" 'moocode-check-semicolons)
     map)
   "Keymap for MOO code major mode.")
@@ -275,7 +300,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define-derived-mode moocode-mode fundamental-mode "MOO"
-  "Major mode for editing LambdaMOO programming language files."
+  "Major mode for editing LambdaMOO programming language files.
+\\{moocode-mode-map}"
   :group 'moocode-mode
   (use-local-map moocode-mode-map)
    (make-local-variable 'font-lock-extend-region-functions)
