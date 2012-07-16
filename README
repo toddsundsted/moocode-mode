@@ -3,12 +3,58 @@ moocode-mode.el
 
 By Rob Myers <rob@robyers.org>
 
-An Emacs major mode for editing LambdaMOO code.
+Emacs support for editing LambdaMOO code.
+
 
 Installation
 ============
 
-See moocode-mode.el for instructions.
+Major Mode
+----------
+
+To install the Emacs major mode, add the file moocode-mode.el to your Emacs
+load path. You can then load it by typing the following in Emacs:
+
+ M-x moocode-mode
+
+Alternatively you can have Emacs load it automatically for files with a .moo
+extension by adding the following to your .emacs file:
+ 
+(require 'moocode-mode)
+(add-to-list 'auto-mode-alist '("\\.moo$" . moocode-mode))
+
+YASnippet
+---------
+
+To ensure that YASnippet works with tab indentation in moocode-mode, add the
+following to your .emacs file (adapted from the YASnippet FAQ):
+
+(defun yas/advise-indent-function (function-symbol)
+  (eval `(defadvice ,function-symbol (around yas/try-expand-first activate)
+           ,(format
+             "Try to expand a snippet before point, then call `%s' as usual"
+             function-symbol)
+           (let ((yas/fallback-behavior nil))
+             (unless (and (interactive-p)
+                          (yas/expand))
+               ad-do-it)))))
+
+(yas/advise-indent-function 'moocode-indent-line)
+
+Autocomplete
+------------
+
+To install the autocomplete dictionary, copy the file ``moocode-mode'' to the
+autocomplete directory in your autoload dictionary directory. e.g.:
+
+cp moocode-mode ~/.emacs.d/ac-dict
+
+Then rebuild the autocomplete cache by typing the following in Emacs:
+
+M-x ac-clear-dictionary-cache
+
+Other Files
+-----------
 
 You don't need to install dev-moocode-mode.el, it just contains code used in
 making the regular expressions used by moocode-mode.el .

@@ -1,0 +1,8 @@
+# name: try ... except ANY ... endtry
+# key: try
+# --
+try
+  $1
+except ANY
+  $2
+endtry

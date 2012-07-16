@@ -1,0 +1,6 @@
+# name: fork ... (...) ... endfork
+# key: forkv
+# --
+fork ${1:variable} (${2:delay})
+  $0
+endfork

@@ -1,0 +1,6 @@
+# name: while (...) ... endwhile
+# key: while
+# --
+while (${1:expression})
+  $0
+endwhile

@@ -20,7 +20,7 @@
 ;;; Installation
 ;;
 ;; To install, add this file to your Emacs load path.
-;; You can then load is' using M-x moocode-mode
+;; You can then load it using M-x moocode-mode
 ;; Alternatively you can have Emacs load it automatically for files with
 ;; a .moo extension by adding the following to your .emacs file:
 ;; 
@@ -39,11 +39,6 @@
 (defcustom moocode-indent 2
   "How much to indent each MOO code block. Defaults to LambdaMOO style (2)."
   :type '(integer)
-  :group 'moocode-mode)
-
-(defcustom moocode-tab-indent t
-  "*Non-nil means TAB in MOO code major mode calls `moocode-indent-line'."
-  :type 'boolean
   :group 'moocode-mode)
 
 (defcustom moocode-electric-mode t
@@ -168,7 +163,7 @@
       (while (and (> (point) rlimit)
 		  keep-searching)
 	;; Looking at a line starting with @? Whatever it is, we should finish
-	(when (looking-at "^\\s-*@")
+	(when (looking-at "^\\(\\s-*@\\|\\.$\\)")
 	  (setf keep-searching nil)
 	  ;; Looking at the start of a property @edit?
 	  (when (moocode-property-edit-linep)
@@ -204,14 +199,8 @@
 (defun moocode-indent-line ()
   "Indent the current line as MOO code."
   (interactive)
-      (if (not (moocode-point-in-property-editp (point-min)))
-	  (moocode-indent-current-line)))
-
-(defun moocode-tab ()
-  "Handle the user pressing TAB."
-  (interactive)
-  (if moocode-tab-indent
-      (moocode-indent-line)))
+  (when (not (moocode-point-in-property-editp (point-min)))
+      (moocode-indent-current-line)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Check for missing semicolons
@@ -289,7 +278,6 @@
 (defvar moocode-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map "\C-j" 'newline-and-indent)
-    (define-key map (kbd "TAB") 'moocode-tab)
     (define-key map ";" 'moocode-electric-semicolon)
     (define-key map "\C-c;" 'moocode-check-semicolons)
     map)
@@ -304,9 +292,10 @@
 \\{moocode-mode-map}"
   :group 'moocode-mode
   (use-local-map moocode-mode-map)
-   (make-local-variable 'font-lock-extend-region-functions)
   (set (make-local-variable 'font-lock-defaults)
-       '(moocode-font-lock-keywords)))
+       '(moocode-font-lock-keywords))
+  (set (make-local-variable 'indent-line-function)
+       'moocode-indent-line))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Provide the mode

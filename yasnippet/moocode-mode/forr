@@ -1,0 +1,6 @@
+# name: for ... in [...] ... endfor
+# key: forr
+# --
+for ${1:variable} in [${2:expression1}..${3:expression2}]
+  $0
+endfor

@@ -1,0 +1,10 @@
+# name: if, elsif, else ...
+# key: ifee
+# --
+if ($1)
+  $2
+elseif ($3)
+  $4
+else
+  $5
+endif
