@@ -23,24 +23,6 @@ extension by adding the following to your .emacs file:
 (require 'moocode-mode)
 (add-to-list 'auto-mode-alist '("\\.moo$" . moocode-mode))
 
-YASnippet
----------
-
-To ensure that YASnippet works with tab indentation in moocode-mode, add the
-following to your .emacs file (adapted from the YASnippet FAQ):
-
-(defun yas/advise-indent-function (function-symbol)
-  (eval `(defadvice ,function-symbol (around yas/try-expand-first activate)
-           ,(format
-             "Try to expand a snippet before point, then call `%s' as usual"
-             function-symbol)
-           (let ((yas/fallback-behavior nil))
-             (unless (and (interactive-p)
-                          (yas/expand))
-               ad-do-it)))))
-
-(yas/advise-indent-function 'moocode-indent-line)
-
 Autocomplete
 ------------
 
