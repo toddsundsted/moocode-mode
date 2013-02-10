@@ -29,8 +29,8 @@
 
 (concat "^\\s-*"
 	(regexp-opt '("break" "continue" "else" "elseif" "endif" "endfor"
-                  "endfork" "endtry" "endwhile" "except" "for" "fork" "if"
-                  "return" "try" "while"))
+                  "endfork" "endtry" "endwhile" "except" "for" "fork" "finally"
+                  "if" "return" "try" "while"))
 	"\\>")
 
 ;; Variables
